@@ -1701,11 +1701,12 @@ int GetMeshEx(
 		return 0;
 	}
 
-	int result = interfaceVHACD->GetNConvexHulls();
 	VHACD::IVHACD::ConvexHull ch;
+
+	int totalMeshes = interfaceVHACD->GetNConvexHulls();
 	int totalPoints = 0;
 	int totalTriangles = 0;
-	for (int i = 0; i < result; i += 1)
+	for (int i = 0; i < totalMeshes; i += 1)
 	{
 		interfaceVHACD->GetConvexHull(i, ch);
 		totalPoints += ch.m_nPoints;
@@ -1714,14 +1715,14 @@ int GetMeshEx(
 
 	*out_points = (double*) malloc(sizeof(double) * totalPoints * 3);
 	*out_triangles = (int*) malloc(sizeof(int) * totalTriangles * 3);
-	*indexes = (int*) malloc(sizeof(int) * (result * 2));
-	*indexes_cnt = result * 2;
+	*indexes = (int*) malloc(sizeof(int) * totalMeshes * 2);
+	*indexes_cnt = totalMeshes * 2;
 
 	double *newPoints = *out_points;
 	int *newTriangles = *out_triangles;
 	int *newIndexes = *indexes;
 	int vertexOffset = 0;
-	for (int i = 0; i < result; i += 1, newIndexes += 2)
+	for (int i = 0; i < totalMeshes; i += 1, newIndexes += 2)
 	{
 		for (int j = 0; j < ch.m_nPoints; j += 1, newPoints += 3)
 		{
@@ -1743,7 +1744,7 @@ int GetMeshEx(
 	/* Clean up. We out. */
 	interfaceVHACD->Clean();
 	interfaceVHACD->Release();
-	return result;
+	return totalMeshes;
 }
 
 int ReleaseMemory(void* ptr)
