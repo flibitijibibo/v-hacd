@@ -1669,8 +1669,6 @@ int GetMeshEx(
 	int *indexes_cnt,
 	ParametersEx prms
 ) {
-	int result = 0;
-
 	ExCallback cb;
 	cb.callback = prms.callback;
 
@@ -1710,28 +1708,42 @@ int GetMeshEx(
 		return 0;
 	}
 
-	result = interfaceVHACD->GetNConvexHulls();
+	int result = interfaceVHACD->GetNConvexHulls();
 	VHACD::IVHACD::ConvexHull ch;
-	std::vector<double> *newPoints = new std::vector<double>();
-	std::vector<int> *newTriangles = new std::vector<int>();
-	std::vector<int> *newIndexes = new std::vector<int>();
+	int totalPoints = 0;
+	int totalTriangles = 0;
 	for (int i = 0; i < result; i += 1)
 	{
 		interfaceVHACD->GetConvexHull(i, ch);
-		/* TODO: The nightmare */
+		totalPoints += ch.m_nPoints;
+		totalTriangles += ch.m_nTriangles;
 	}
 
-	/* FIXME: This memcpy sucks so hard */
-	*out_points = (double*) malloc(sizeof(double) * newPoints->size());
-	*out_triangles = (int*) malloc(sizeof(int) * newTriangles->size());
-	*indexes = (int*) malloc(sizeof(int) * newIndexes->size());
-	*indexes_cnt = newIndexes->size();
-	memcpy(*out_points, &newPoints[0], sizeof(double) * newPoints->size());
-	memcpy(*out_triangles, &newTriangles[0], sizeof(int) * newTriangles->size());
-	memcpy(*indexes, &newIndexes[0], sizeof(int) * newIndexes->size());
-	delete newPoints;
-	delete newTriangles;
-	delete newIndexes;
+	*out_points = (double*) malloc(sizeof(double) * totalPoints * 3);
+	*out_triangles = (int*) malloc(sizeof(int) * totalTriangles * 3);
+	*indexes = (int*) malloc(sizeof(int) * (result * 2));
+	*indexes_cnt = result * 2;
+
+	double *newPoints = *out_points;
+	int *newTriangles = *out_triangles;
+	int *newIndexes = *indexes;
+	for (int i = 0; i < result; i += 1, newIndexes += 2)
+	{
+		for (int j = 0; j < ch.m_nPoints; j += 1, newPoints += 3)
+		{
+			newPoints[0] = ch.m_points[j];
+			newPoints[1] = ch.m_points[j + 1];
+			newPoints[2] = ch.m_points[j + 2];
+		}
+		for (int j = 0; j < ch.m_nTriangles; j += 1, newTriangles += 3)
+		{
+			newTriangles[0] = ch.m_triangles[j];
+			newTriangles[1] = ch.m_triangles[j + 1];
+			newTriangles[2] = ch.m_triangles[j + 2];
+		}
+		newIndexes[0] = ch.m_nPoints * 3;
+		newIndexes[1] = ch.m_nTriangles * 3;
+	}
 
 	/* Clean up. We out. */
 	interfaceVHACD->Clean();
