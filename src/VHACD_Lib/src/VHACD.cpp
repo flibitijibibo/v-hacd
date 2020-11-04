@@ -1590,6 +1590,14 @@ bool VHACD::ComputeCenterOfMass(double centerOfMass[3]) const
 
 extern "C" {
 
+typedef void (*ExCallbackFunc)(
+	const double overallProgress,
+	const double stageProgress,
+	const double operationProgress,
+	const char* const stage,
+	const char* const operation
+);
+
 typedef struct ParametersEx
 {
 	int maxConvexHulls;
@@ -1603,13 +1611,7 @@ typedef struct ParametersEx
 	int mode;
 	int maxNumVerticesPerCH;
 	double minVolumePerCH;
-	void (*callback)(
-		double overallProgress,
-		double stageProgress,
-		double operationProgress,
-		void* stage,
-		void* operation
-	);
+	ExCallbackFunc callback;
 } ParametersEx;
 
 typedef struct Vector3Ex
@@ -1629,17 +1631,116 @@ int GetMeshEx(
 	int **indexes,
 	int *indexes_cnt,
 	ParametersEx prms
+);
+
+int ReleaseMemory(void* ptr);
+
+} // end of extern "C"
+
+class ExCallback : public VHACD::IVHACD::IUserCallback
+{
+public:
+	ExCallbackFunc callback;
+	virtual void Update(
+		const double overallProgress,
+		const double stageProgress,
+		const double operationProgress,
+		const char* const stage,
+		const char* const operation
+	) {
+		callback(
+			overallProgress,
+			stageProgress,
+			operationProgress,
+			stage,
+			operation
+		);
+	}
+};
+
+int GetMeshEx(
+	Vector3Ex *points,
+	int points_size,
+	int *triangles,
+	int triangles_size,
+	double **out_points,
+	int **out_triangles,
+	int **indexes,
+	int *indexes_cnt,
+	ParametersEx prms
 ) {
-	*out_points = NULL;
-	*out_triangles = NULL;
-	*indexes = NULL;
-	*indexes_cnt = 0;
-	return 0;
+	int result = 0;
+
+	ExCallback cb;
+	cb.callback = prms.callback;
+
+	VHACD::IVHACD::Parameters paramsVHACD;
+	paramsVHACD.m_concavity = prms.concavity;
+	paramsVHACD.m_alpha = prms.alpha;
+	paramsVHACD.m_beta = prms.beta;
+	paramsVHACD.m_minVolumePerCH = prms.minVolumePerCH;
+	paramsVHACD.m_resolution = prms.resolution;
+	paramsVHACD.m_maxNumVerticesPerCH = prms.maxNumVerticesPerCH;
+	paramsVHACD.m_planeDownsampling = prms.planeDownsampling;
+	paramsVHACD.m_pca = prms.pca;
+	paramsVHACD.m_mode = prms.mode;
+	paramsVHACD.m_convexhullApproximation = prms.convexHullApproximation;
+	paramsVHACD.m_maxConvexHulls = prms.maxConvexHulls;
+	paramsVHACD.m_callback = &cb;
+	/* Untouched:
+	 * m_logger
+	 * m_convexhullDownsampling
+	 * m_oclAcceleration
+	 * m_projectHullVertices
+	 */
+
+	VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
+	bool res = interfaceVHACD->Compute(
+		(float*) points,
+		points_size / 3, /* FIXME: Why? */
+		(const uint32_t*) triangles,
+		triangles_size, /* FIXME: Why? */
+		paramsVHACD
+	);
+	if (!res)
+	{
+		/* Eep! */
+		interfaceVHACD->Clean();
+		interfaceVHACD->Release();
+		return 0;
+	}
+
+	result = interfaceVHACD->GetNConvexHulls();
+	VHACD::IVHACD::ConvexHull ch;
+	std::vector<double> *newPoints = new std::vector<double>();
+	std::vector<int> *newTriangles = new std::vector<int>();
+	std::vector<int> *newIndexes = new std::vector<int>();
+	for (int i = 0; i < result; i += 1)
+	{
+		interfaceVHACD->GetConvexHull(i, ch);
+		/* TODO: The nightmare */
+	}
+
+	/* FIXME: This memcpy sucks so hard */
+	*out_points = (double*) malloc(sizeof(double) * newPoints->size());
+	*out_triangles = (int*) malloc(sizeof(int) * newTriangles->size());
+	*indexes = (int*) malloc(sizeof(int) * newIndexes->size());
+	*indexes_cnt = newIndexes->size();
+	memcpy(*out_points, &newPoints[0], sizeof(double) * newPoints->size());
+	memcpy(*out_triangles, &newTriangles[0], sizeof(int) * newTriangles->size());
+	memcpy(*indexes, &newIndexes[0], sizeof(int) * newIndexes->size());
+	delete newPoints;
+	delete newTriangles;
+	delete newIndexes;
+
+	/* Clean up. We out. */
+	interfaceVHACD->Clean();
+	interfaceVHACD->Release();
+	return result;
 }
 
 int ReleaseMemory(void* ptr)
 {
+	free(ptr);
 	return 0;
 }
-
-} // end of extern "C"
