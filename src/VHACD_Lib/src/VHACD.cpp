@@ -1614,15 +1614,8 @@ typedef struct ParametersEx
 	ExCallbackFunc callback;
 } ParametersEx;
 
-typedef struct Vector3Ex
-{
-	float x;
-	float y;
-	float z;
-} Vector3Ex;
-
 int GetMeshEx(
-	Vector3Ex *points,
+	float *points, /* Actually Vector3, but whatever */
 	int points_size,
 	int *triangles,
 	int triangles_size,
@@ -1659,7 +1652,7 @@ public:
 };
 
 int GetMeshEx(
-	Vector3Ex *points,
+	float *points, /* Actually Vector3, but whatever */
 	int points_size,
 	int *triangles,
 	int triangles_size,
@@ -1694,7 +1687,7 @@ int GetMeshEx(
 
 	VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
 	bool res = interfaceVHACD->Compute(
-		(float*) points,
+		points,
 		points_size / 3, /* FIXME: Why? */
 		(const uint32_t*) triangles,
 		triangles_size, /* FIXME: Why? */
