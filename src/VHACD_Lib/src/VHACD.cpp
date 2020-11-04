@@ -1681,16 +1681,16 @@ int GetMeshEx(
 	/* Untouched:
 	 * m_logger
 	 * m_convexhullDownsampling
-	 * m_oclAcceleration
 	 * m_projectHullVertices
 	 */
+	paramsVHACD.m_oclAcceleration = false; /* Probably shouldn't, thanks NVIDIA! */
 
 	VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
 	bool res = interfaceVHACD->Compute(
 		points,
-		points_size / 3, /* FIXME: Why? */
+		points_size / 3,
 		(const uint32_t*) triangles,
-		triangles_size, /* FIXME: Why? */
+		triangles_size / 3,
 		paramsVHACD
 	);
 	if (!res)
