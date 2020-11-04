@@ -1612,14 +1612,21 @@ typedef struct ParametersEx
 	);
 } ParametersEx;
 
+typedef struct Vector3Ex
+{
+	float x;
+	float y;
+	float z;
+} Vector3Ex;
+
 int GetMeshEx(
-	void* points,
+	Vector3Ex *points,
 	int points_size,
-	void* triangles,
+	int *triangles,
 	int triangles_size,
-	void** out_points,
-	void** out_triangles,
-	void** indexes,
+	double **out_points,
+	int **out_triangles,
+	int **indexes,
 	int *indexes_cnt,
 	ParametersEx prms
 ) {
