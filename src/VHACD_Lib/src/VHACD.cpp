@@ -1720,6 +1720,7 @@ int GetMeshEx(
 	double *newPoints = *out_points;
 	int *newTriangles = *out_triangles;
 	int *newIndexes = *indexes;
+	int vertexOffset = 0;
 	for (int i = 0; i < result; i += 1, newIndexes += 2)
 	{
 		for (int j = 0; j < ch.m_nPoints; j += 1, newPoints += 3)
@@ -1728,11 +1729,11 @@ int GetMeshEx(
 			newPoints[1] = ch.m_points[j + 1];
 			newPoints[2] = ch.m_points[j + 2];
 		}
-		for (int j = 0; j < ch.m_nTriangles; j += 1, newTriangles += 3)
+		for (int j = 0; j < ch.m_nTriangles; j += 1, vertexOffset += 3, newTriangles += 3)
 		{
-			newTriangles[0] = ch.m_triangles[j];
-			newTriangles[1] = ch.m_triangles[j + 1];
-			newTriangles[2] = ch.m_triangles[j + 2];
+			newTriangles[0] = ch.m_triangles[j] + vertexOffset;
+			newTriangles[1] = ch.m_triangles[j + 1] + vertexOffset;
+			newTriangles[2] = ch.m_triangles[j + 2] + vertexOffset;
 		}
 		newIndexes[0] = ch.m_nPoints * 3;
 		newIndexes[1] = ch.m_nTriangles * 3;
