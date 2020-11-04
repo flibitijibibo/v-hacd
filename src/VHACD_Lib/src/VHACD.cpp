@@ -1587,3 +1587,52 @@ bool VHACD::ComputeCenterOfMass(double centerOfMass[3]) const
 }
 
 } // end of VHACD namespace
+
+extern "C" {
+
+typedef struct ParametersEx
+{
+	int maxConvexHulls;
+	int resolution;
+	double concavity;
+	int planeDownsampling;
+	int convexHullApproximation;
+	double alpha;
+	double beta;
+	int pca;
+	int mode;
+	int maxNumVerticesPerCH;
+	double minVolumePerCH;
+	void (*callback)(
+		double overallProgress,
+		double stageProgress,
+		double operationProgress,
+		void* stage,
+		void* operation
+	);
+} ParametersEx;
+
+int GetMeshEx(
+	void* points,
+	int points_size,
+	void* triangles,
+	int triangles_size,
+	void** out_points,
+	void** out_triangles,
+	void** indexes,
+	int *indexes_cnt,
+	ParametersEx prms
+) {
+	*out_points = NULL;
+	*out_triangles = NULL;
+	*indexes = NULL;
+	*indexes_cnt = 0;
+	return 0;
+}
+
+int ReleaseMemory(void* ptr)
+{
+	return 0;
+}
+
+} // end of extern "C"
