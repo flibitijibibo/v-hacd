@@ -1721,22 +1721,18 @@ int GetMeshEx(
 	double *newPoints = *out_points;
 	int *newTriangles = *out_triangles;
 	int *newIndexes = *indexes;
-	for (int i = 0; i < totalMeshes; i += 1, newIndexes += 2)
+	for (int i = 0; i < totalMeshes; i += 1)
 	{
-		for (int j = 0; j < ch.m_nPoints; j += 1, newPoints += 3)
-		{
-			newPoints[0] = ch.m_points[j];
-			newPoints[1] = ch.m_points[j + 1];
-			newPoints[2] = ch.m_points[j + 2];
-		}
-		for (int j = 0; j < ch.m_nTriangles; j += 1, newTriangles += 3)
-		{
-			newTriangles[0] = ch.m_triangles[j];
-			newTriangles[1] = ch.m_triangles[j + 1];
-			newTriangles[2] = ch.m_triangles[j + 2];
-		}
+		interfaceVHACD->GetConvexHull(i, ch);
+
+		memcpy(newPoints, ch.m_points, sizeof(double) * ch.m_nPoints * 3);
+		memcpy(newTriangles, ch.m_triangles, sizeof(int) * ch.m_nTriangles * 3);
 		newIndexes[0] = ch.m_nPoints * 3;
 		newIndexes[1] = ch.m_nTriangles * 3;
+
+		newPoints += ch.m_nPoints * 3;
+		newTriangles += ch.m_nTriangles * 3;
+		newIndexes += 2;
 	}
 
 	/* Clean up. We out. */
